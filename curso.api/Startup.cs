@@ -84,6 +84,8 @@ namespace curso.api
                 };
             });
 
+            Console.WriteLine(Configuration.GetConnectionString("DefaultConnection"));
+
             services.AddDbContext<CursoDbContext>(options =>
             {
                 options.UseSqlServer(Configuration.GetConnectionString("DefaultConnection"), x => x.MigrationsAssembly(typeof(CursoDbContext).Assembly.FullName).EnableRetryOnFailure());
