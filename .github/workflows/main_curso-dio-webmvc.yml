@@ -22,7 +22,11 @@ jobs:
 
     - name: Build with dotnet
       run: dotnet build --configuration Release
-
+    
+    - name: dotnet tests
+      run: dotnet test "${GITHUB_WORKSPACE}/tests/curso.api.tests/curso.api.tests.csproj"
+      env:
+        ConnectionStrings.DefaultConnection: ${{ secrets.DEFAULTCONNECTION }}
     - name: dotnet publish
       run: dotnet publish "${GITHUB_WORKSPACE}/curso.web.mvc/curso.web.mvc.csproj" -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
