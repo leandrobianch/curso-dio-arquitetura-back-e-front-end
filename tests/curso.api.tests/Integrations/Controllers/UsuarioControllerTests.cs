@@ -32,6 +32,7 @@ namespace curso.api.tests.Integrations.Controllers
         {
             // Arrange
             RegistroViewModelInput = new AutoFaker<RegistroViewModelInput>(AutoBogusConfiguration.LOCATE)
+                                            .RuleFor(p => p.Login, faker => faker.Person.UserName)
                                             .RuleFor(p => p.Email, faker => faker.Person.Email);
                                                 
             StringContent content = new StringContent(JsonConvert.SerializeObject(RegistroViewModelInput), Encoding.UTF8, "application/json");
