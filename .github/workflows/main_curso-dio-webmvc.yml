@@ -27,10 +27,20 @@ jobs:
       run: dotnet test "${GITHUB_WORKSPACE}/tests/curso.api.tests/curso.api.tests.csproj"
       env:
         ConnectionStrings__DefaultConnection: ${{ secrets.DEFAULTCONNECTION }}
-    - name: dotnet publish
+    - name: dotnet publish api
+      run: dotnet publish "${GITHUB_WORKSPACE}/curso.api/curso.api.csproj" -c Release -o ${{env.DOTNET_ROOT}}/myapi
+    - name: Deploy to Azure Web App api
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'curso-dio-api-rest'
+        slot-name: 'production'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_e38ff5db96224522b174fb4ba66f6414 }}
+        package: ${{env.DOTNET_ROOT}}/myapi 
+
+    - name: dotnet publish web mvc
       run: dotnet publish "${GITHUB_WORKSPACE}/curso.web.mvc/curso.web.mvc.csproj" -c Release -o ${{env.DOTNET_ROOT}}/myapp
 
-    - name: Deploy to Azure Web App
+    - name: Deploy to Azure Web App web mvc
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'curso-dio-webmvc'
