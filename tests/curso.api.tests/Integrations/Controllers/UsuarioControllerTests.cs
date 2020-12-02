@@ -15,7 +15,7 @@ namespace curso.api.tests.Integrations.Controllers
     public class UsuarioControllerTests : IClassFixture<WebApplicationFactory<Startup>>, IAsyncLifetime
     {
         private readonly WebApplicationFactory<Startup> _factory;
-        protected readonly ITestOutputHelper _output;
+        protected readonly ITestLoggerFactory _output;
         protected readonly HttpClient _httpClient;
         protected RegistroViewModelInput RegistroViewModelInput;
         protected LoginViewModelOutput LoginViewModelOutput;
@@ -23,7 +23,7 @@ namespace curso.api.tests.Integrations.Controllers
         public UsuarioControllerTests(WebApplicationFactory<Startup> factory, ITestOutputHelper output)
         {
             _factory = factory;
-            _output = output;
+            _output = new TestLoggerFactory(output);
             _httpClient = _factory.CreateClient();
         }
 
