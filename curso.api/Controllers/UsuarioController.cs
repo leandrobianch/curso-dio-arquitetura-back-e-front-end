@@ -5,7 +5,9 @@ using curso.api.Filters;
 using curso.api.Models;
 using curso.api.Models.Usuarios;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Swashbuckle.AspNetCore.Annotations;
+using System;
 using System.Threading.Tasks;
 
 namespace curso.api.Controllers
@@ -14,12 +16,14 @@ namespace curso.api.Controllers
     [ApiController]
     public class UsuarioController : ControllerBase
     {
+        private readonly ILogger<UsuarioController> _logger;
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IAuthenticationService _authenticationService;
-        public UsuarioController(
+        public UsuarioController(ILogger<UsuarioController> logger,
             IUsuarioRepository usuarioRepository,             
             IAuthenticationService authenticationService)
         {
+            _logger = logger;
             _usuarioRepository = usuarioRepository;
             _authenticationService = authenticationService;
         }
@@ -36,32 +40,40 @@ namespace curso.api.Controllers
         [ValidacaoModelStateCustomizado]
         public async Task<IActionResult> Logar(LoginViewModelInput loginViewModelInput)
         {
-            var usuario = await _usuarioRepository.ObterUsuarioAsync(loginViewModelInput.Login);
-
-            if (usuario == null)
+            try
             {
-                return BadRequest("Houve um erro ao tentar acessar.");
+                var usuario = await _usuarioRepository.ObterUsuarioAsync(loginViewModelInput.Login);
+
+                if (usuario == null)
+                {
+                    return BadRequest("Houve um erro ao tentar acessar.");
+                }
+
+                //if (usuario.Senha != loginViewModel.Senha.GerarSenhaCriptografada())
+                //{
+                //    return BadRequest("Houve um erro ao tentar acessar.");
+                //}
+
+                var usuarioViewModelOutput = new UsuarioViewModelOutput()
+                {
+                    Codigo = usuario.Codigo,
+                    Login = loginViewModelInput.Login,
+                    Email = usuario.Email
+                };
+
+                var token = _authenticationService.GerarToken(usuarioViewModelOutput);
+
+                return Ok(new LoginViewModelOutput
+                {
+                    Token = token,
+                    Usuario = usuarioViewModelOutput
+                });
             }
-
-            //if (usuario.Senha != loginViewModel.Senha.GerarSenhaCriptografada())
-            //{
-            //    return BadRequest("Houve um erro ao tentar acessar.");
-            //}
-
-            var usuarioViewModelOutput = new UsuarioViewModelOutput()
+            catch (Exception ex)
             {
-                Codigo = usuario.Codigo,
-                Login = loginViewModelInput.Login,
-                Email = usuario.Email
-            };
-
-            var token = _authenticationService.GerarToken(usuarioViewModelOutput);
-
-            return Ok(new LoginViewModelOutput
-            {
-                Token = token,
-                Usuario = usuarioViewModelOutput
-            });
+                _logger.LogError(ex.ToString());
+                return new StatusCodeResult(500);
+            }
         }
 
         /// <summary>
@@ -76,30 +88,31 @@ namespace curso.api.Controllers
         [ValidacaoModelStateCustomizado]
         public async Task<IActionResult> Registrar(RegistroViewModelInput loginViewModelInput)
         {
+            try
+            { 
+                var usuario = await _usuarioRepository.ObterUsuarioAsync(loginViewModelInput.Login);
 
+                if (usuario != null)
+                {
+                    return BadRequest("Usuário já cadastrado");
+                }
 
-            //var migracoesPendentes = contexto.Database.GetPendingMigrations();
+                usuario = new Usuario
+                {
+                    Login = loginViewModelInput.Login,
+                    Senha = loginViewModelInput.Senha,
+                    Email = loginViewModelInput.Email
+                };
+                _usuarioRepository.Adicionar(usuario);
+                _usuarioRepository.Commit();
 
-            //if (migracoesPendentes.Count() > 0)
-            //{
-            //    contexto.Database.Migrate();
-            //}
-
-            var usuario = await _usuarioRepository.ObterUsuarioAsync(loginViewModelInput.Login);
-
-            if(usuario != null)
-            {
-                return BadRequest("Usuário já cadastrado");
+                return Created("", loginViewModelInput);
             }
-
-            usuario = new Usuario();
-            usuario.Login = loginViewModelInput.Login;
-            usuario.Senha = loginViewModelInput.Senha;
-            usuario.Email = loginViewModelInput.Email;
-            _usuarioRepository.Adicionar(usuario);
-            _usuarioRepository.Commit();
-
-            return Created("", loginViewModelInput);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.ToString());
+                return new StatusCodeResult(500);
+            }
         }
     }
 }
